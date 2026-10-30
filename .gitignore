@@ -1,0 +1,18 @@
+# device dumps: persist/modemst/fsg hold IMEI + calibration; live DT holds the serial
+backup/
+dtb/
+recovery/
+# third-party/Apple sources fetched for reading
+research/
+shim/out/
+xnu/out/
+xnu/out-*/
+__pycache__/
+# build outputs and device logs: CI artifacts, boot images, pulled kernel logs
+logs/
+*.img
+*.simg
+*.zip
+/*.bin
+sweet-userland/
+sweet-audio/
