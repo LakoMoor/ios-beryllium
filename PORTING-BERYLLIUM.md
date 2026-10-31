@@ -64,3 +64,13 @@ temporary `fastboot boot`; back up partitions first; confirm each destructive st
 - `tools/mkadt.py` adapted for the basics (FB 0x9d400000 1080x2246, vtimer INTID 19, 4+4 cores 1766/2803 MHz, RAM base 0xb0400000 / highmem 3 GiB) and builds an ADT (`--highmem`). Untested on hardware. Needs `research/ipsw-x/d22ap.adt` (iPhone 8 DT from the iOS 16.7.16 IPSW via tools/remotezip.py + tools/adt.py).
 - Still apollo-only in mkadt/xnu: touch (NT36675 SPI -> NT36672A), cpufreq (EPSS -> SDM845 OSM/CPUFREQ-HW), TSENS, RPMh DDR, GPU a650 -> a630, wifi/bt, audio, haptics.
 - NEXT: (1) create a private GitHub repo from this tree and run `xnu.yml` (kernel build, macOS runners) -- needs user's OK to push/spend Actions minutes; (2) fetch d22ap.adt; (3) boot XNU to fbcon (M3).
+
+## M3 done (2026-10-31): XNU boots on beryllium
+- Kernel: CI run 41148235401 (xnu.yml on macos-14; the brownout windows fail it, see below). `xnu/out/kernel.development.sweet` sha256 1d49a121...
+- d22ap.adt: `tools/remotezip.py <IPSW 16.7.16 20H392 url> DeviceTree.d22ap.im4p research/ipsw-x/dl` + `ipsw img4 im4p extract`.
+- Image: `mkadt.py shim/out/beryllium.adt --highmem`; `mkpayload.py kernel adt payload.bin --cmdline 'debug=0xc serial=3 cpus=1 keepsyms=1 -enable_kprintf_spam -noprogress sweetfb_probe=0'`; `shim/build.sh ../shim/out/payload.bin`; `fastboot boot` (fresh session).
+- Boot 1: panic in `sweet_fb_probe+0x1d0` (patch 0125, reads SM8250 MDP registers; esr 0x96000010 external abort). Fix: boot-arg `sweetfb_probe=0`.
+- Boot 2 (photo): kernel runs to "Waiting on IOMedia Apple_HFS" (no root yet); AppleCLCD/SweetFramebuffer fine, 600 vsyncs per 10 s; no panic.
+- Panic symbolication: `llvm-nm -n` on the kernel, unslid (slide 0): see the one-off script in this session (addresses from the photo -> nearest symbol).
+- CI note: macos-14 is browned out 14:00-24:00 UTC on Oct 29-Nov 1 and retired on Nov 2 2026; Xcode 16+ iig is incompatible with xnu-8796. After that: Xcode 15.4 locally (xcodes install 15.4, Apple ID) or an iig-compatible patch.
+- NEXT (M4): iOS root. tools/build-ios-root.sh needs Linux (apfs-fuse, hfsprogs, loop mounts), ~40 GB and the 7.5 GB IPSW; Mac has 52 GB free. Target partition `win` (46 GB). Then `rd=ufsroot0 ufsrw=1 rootrw=1` and the UFS driver must target the `win` LUN/LBA (check tools/sweet-root-install.sh and bsd/dev/sweet_ufs.c for how userdata is located).
