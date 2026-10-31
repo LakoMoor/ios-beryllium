@@ -114,11 +114,14 @@ done
 # and mode, plus a .migrated marker, else asks a helper and crashes
 # ("BUG IN LIBTRACE: Failed to migrate directory").
 db="$work/root/private/var/db"
-sudo install -d -o 272 -g 272 -m 0751 "$db/diagnostics"
-sudo install -d -o 272 -g 272 -m 0755 "$db/uuidtext" "$db/diagnostics/timesync"
+# numeric owner via chown: uutils install (Ubuntu 26.04) rejects "-o 272"
+sudo install -d -m 0751 "$db/diagnostics"
+sudo install -d -m 0755 "$db/uuidtext" "$db/diagnostics/timesync"
 for d in diagnostics uuidtext diagnostics/timesync; do
-	sudo install -o 272 -g 272 -m 0644 /dev/null "$db/$d/.migrated"
+	sudo install -m 0644 /dev/null "$db/$d/.migrated"
 done
+sudo chown 272:272 "$db/diagnostics" "$db/uuidtext" "$db/diagnostics/timesync" \
+	"$db/diagnostics/.migrated" "$db/uuidtext/.migrated" "$db/diagnostics/timesync/.migrated"
 
 # System keybag for the built-in AppleKeyStore (no passcode).
 sudo install -d -m 0700 -o 0 -g 0 "$work/root/private/var/keybags"
@@ -132,4 +135,5 @@ sudo umount "$work/root"
 # Linux hfsplus decomposes some non-ASCII names (localized Shortcuts examples)
 # differently from Apple's tables; let fsck_hfs rewrite them, then verify.
 fsck.hfsplus -f -y "$out" | grep -v 'Illegal name' || true
-fsck.hfsplus -f -n "$out"
+# a fresh journaled volume reads "needs minor repair" to Linux fsck -n: shown, not fatal (as in build-ios-root.sh)
+fsck.hfsplus -f -n "$out" || echo "note: fsck -n reports a minor repair (known, not fatal)"

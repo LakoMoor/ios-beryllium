@@ -117,7 +117,7 @@ for old in "${olds[@]}"; do
 done
 free_kb=$(df -Pk "$out" | awk 'NR == 2 { print $4 }')
 have_kb=$(du -sk "$ipswdir" | awk '{ print $1 }')
-need_kb=$(((40 * 1024 * 1024) - have_kb))
+need_kb=$(((${SWEET_NEED_GB:-40} * 1024 * 1024) - have_kb))
 [ -z "$reuse" ] || need_kb=$((14 * 1024 * 1024))         # the sparse image only
 [ "$free_kb" -gt "$need_kb" ] || die "need about $((need_kb / 1024 / 1024)) GB free under research/ (have $((free_kb / 1024 / 1024)) GB)"
 
